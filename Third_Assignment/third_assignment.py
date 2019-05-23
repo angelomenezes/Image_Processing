@@ -30,6 +30,9 @@ class third_assignment:
 
     def denoising(self):
 
+        # Load mode of denoising
+        mode = str(input()).rstrip()
+
         # Load degraded image
         image = imageio.imread(self.filename_deg)
 
@@ -38,12 +41,12 @@ class third_assignment:
         filtered_image = []
         center_mask = self.create_mask_center_value(self.parameter_size) # Mask to get central value of matrix
         temp_matrix = np.zeros([self.parameter_size, self.parameter_size])
-        center_pixel, fitered_value, centr_l, disp_l = 0,0,0,0
-
-        mode = input()
+        center_pixel, centr_l, disp_l = 0,0,0
+        percentil3, percentil = 0,0
 
         if mode == 'average': # Mean and Standard Deviation for centrality and dispersion measurements
-            disp_n = self.check_dispersion_n(np.std(reshaped_image[0:(reshaped_image.shape[0]//6 - 1), 0:(reshaped_image.shape[1]//6 - 1)])) # Check general variance of pixels in the image through std
+
+            disp_n = self.check_dispersion_n(np.std(image[0:(image.shape[0]//6 - 1), 0:(image.shape[1]//6 - 1)]))
 
             for row in range(reshaped_image.shape[0] - self.parameter_size + 1):
                 for column in range(reshaped_image.shape[1] - self.parameter_size + 1):
@@ -51,26 +54,27 @@ class third_assignment:
                     centr_l = temp_matrix.mean()
                     disp_l = self.check_dispersion_l(temp_matrix.std(), disp_n)
                     center_pixel = np.sum(temp_matrix*center_mask) # Gets the pixel of the degraded image (center of the matrix)
-                    filtered_value = center_pixel - self.parameter_gamma * (disp_n / disp_l) * (center_pixel - centr_l)
-                    filtered_image.append(filtered_value)
+                    filtered_image.append(center_pixel - self.parameter_gamma * (disp_n / disp_l) * (center_pixel - centr_l))
 
         elif mode == 'robust': # Median and Interquatile Range for centrality and dispersion measurements
-            disp_n = self.get_interquatile_range(reshaped_image[0:(reshaped_image.shape[0]//6 - 1), 0:(reshaped_image.shape[1]//6 - 1)]) # Check general variance of pixels in the image through Interquatile Range
+
+            percentil3, _, percentil1 = self.get_interquatile_median(image[0:(image.shape[0]//6 - 1), 0:(image.shape[1]//6 - 1)])
+            disp_n = self.check_dispersion_n(percentil3 - percentil1) # Interquatile Range
 
             for row in range(reshaped_image.shape[0] - self.parameter_size + 1):
                 for column in range(reshaped_image.shape[1] - self.parameter_size + 1):
                     temp_matrix = reshaped_image[row:self.parameter_size+row, column:self.parameter_size+column]
-                    centr_l = np.median(temp_matrix)
-                    disp_l = self.check_dispersion_l(self.get_interquatile_range(temp_matrix), disp_n) # Interquatile Range
+                    percentil3, centr_l, percentil1 = self.get_interquatile_median(temp_matrix)
+                    disp_l = self.check_dispersion_l(percentil3 - percentil1, disp_n)
                     center_pixel = np.sum(temp_matrix*center_mask) # Gets the pixel of the degraded image (center of the matrix)
-                    filtered_value = center_pixel - self.parameter_gamma * (disp_n / disp_l) * (center_pixel - centr_l)
-                    filtered_image.append(filtered_value)
+                    filtered_image.append(center_pixel - self.parameter_gamma * (disp_n / disp_l) * (center_pixel - centr_l))
 
         filtered_image = np.array(filtered_image).reshape(image.shape[0], image.shape[1])
 
         filtered_image = self.normalization(filtered_image, image)
 
         return filtered_image
+
 
     def deblurring(self):
 
@@ -103,7 +107,7 @@ class third_assignment:
         P_U = fftn(px_pad)
 
         # Calculating the CLS function
-        filtered_image = np.multiply((H_U.conjugate() / np.abs(H_U)**2 + self.parameter_gamma * np.abs(P_U) ** 2), G_deg)
+        filtered_image = (H_U.conjugate() / (np.abs(H_U)**2 + self.parameter_gamma * np.abs(P_U) ** 2)) * G_deg
 
         # Passing it for the spatial domain
         filtered_image = fftshift(ifftn(filtered_image).real)
@@ -145,9 +149,9 @@ class third_assignment:
         mask[center, center] = 1
         return mask
 
-    def get_interquatile_range(self, matrix):
-        percentiles = np.percentile(matrix, [75, 25])
-        return percentiles[0] - percentiles[1]
+    def get_interquatile_median(self, matrix):
+        percentiles = np.percentile(matrix, [75, 50, 25])
+        return percentiles
 
     def normalization(self,image, reference):
         min_ = np.min(image)
@@ -160,15 +164,6 @@ def RMSE(image1, image2):
     image1 = image1.astype(float)
     image2 = image2.astype(float)
     return np.float(np.sqrt(((image1 - image2)**2).mean()))
-
-# A simple function for visualization
-def comparing_images(image1, image2):
-    _ = plt.figure(figsize=(5,5))
-    _ = plt.subplot(1,2,1)
-    _ = plt.imshow(image1, cmap='gray')
-    _ = plt.subplot(1,2,2)
-    _ = plt.imshow(image2, cmap='gray')
-    plt.show()
 
 if __name__  == "__main__":
 
