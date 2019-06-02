@@ -1,7 +1,6 @@
 polygons128.png
 poly_noised.png
 1
-0.95
+0.8
 5
 robust
-

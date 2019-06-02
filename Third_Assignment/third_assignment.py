@@ -42,7 +42,7 @@ class third_assignment:
         center_mask = self.create_mask_center_value(self.parameter_size) # Mask to get central value of matrix
         temp_matrix = np.zeros([self.parameter_size, self.parameter_size])
         center_pixel, centr_l, disp_l = 0,0,0
-        percentil3, percentil = 0,0
+        percentil3, percentil1 = 0,0
 
         if mode == 'average': # Mean and Standard Deviation for centrality and dispersion measurements
 
