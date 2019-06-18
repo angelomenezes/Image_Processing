@@ -67,7 +67,7 @@ class fourth_assignment:
         ids = np.sort(random.sample(range(0, img_shape), self.n_clusters))
         cluster_centroids = image[ids] # Centroid initialization
 
-        #while(len(np.unique(cluster_centroids, axis=0)) != len(cluster_centroids)): # This can be added to make sure there is not any repeated cluster centroid
+        #while(len(np.unique(cluster_centroids, axis=0)) != len(cluster_centroids)): # This can be added to make sure there was not any repeated cluster centroid
         #    ids = np.sort(random.sample(range(0, img_shape), self.n_clusters))
         #    cluster_centroids = image[ids]
 
